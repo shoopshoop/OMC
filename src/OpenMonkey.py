@@ -145,3 +145,30 @@ class OpenMonkey:
         plt.axis('off')
         plt.show()
     return cropped, [x, y]
+
+  def csvAnns(self, filename):
+    # read file
+    try:
+      f = open(self.root + filename, "r")
+      # skip header lines
+      for i in range(3):
+        f.readline()
+      data = f.readlines()
+      f.close()
+    except:
+      print("Error: could not read file")
+    # remove newline and split each line using comma as delimiter
+    for i,ln in enumerate(data):
+      sample = ln.strip().split(',')
+      data[i] = list(map(lambda x: float(x), sample[1:]))
+      self.imgs[i] = sample[0]
+      self.landmarks[i] = [data[i][j] for j in range(len(data[i])) if (j + 1) % 3 != 0]
+
+  def write_landmarks_to_file(self):
+    # update json dataset
+    if 'data' in self.dataset:
+      for i in range(len(self.dataset['data'])):
+        self.dataset['data'][i]['landmarks'] = self.landmarks[i] 
+    # writing to sample.json
+    with open("test_prediction.json", "w") as fd:
+      fd.write(json.dumps(self.dataset, indent=4))

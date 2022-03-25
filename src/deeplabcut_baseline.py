@@ -1,5 +1,6 @@
 from OpenMonkey import *
 import deeplabcut
+from dlclive import DLCLive
 
 '''
 Following instructions found at
@@ -57,8 +58,8 @@ if __name__ == '__main__':
   # make sure to move the csv file to labeled-data/dummy_video/
   '''
   # step 5
-  '''
   # convert csv to h5 file format
+  '''
   deeplabcut.convertcsv2h5(config, scorer='anthony') 
   '''
   '''
@@ -66,9 +67,41 @@ if __name__ == '__main__':
   this can be done with symbolic links
   > find ./path/to/train/ -name \*.jpg -exec ln -s "{}" . ';'
   '''
-  '''
   # create training dataset
+  '''
   deeplabcut.create_training_dataset(config, net_type='resnet_50')
   '''
   # train model
+  '''
   deeplabcut.train_network(config)
+  '''
+  # evaluate model
+  '''
+  deeplabcut.evaluate_network(config)
+  '''
+  # export model
+  '''
+  deeplabcut.export_model(config)
+  '''
+
+  # evaluate test images
+  om_train = OpenMonkey('../data/res/test_prediction.json', '../data/test/')
+  model_path = os.path.abspath('.') + '/omc_deeplabcut-anthony-2022-03-23/exported-models/DLC_omc_deeplabcut_resnet_50_iteration-0_shuffle-1/'
+  dlc_live = DLCLive(model_path, model_type='base')
+  img = cv2.imread(os.path.join(om_train.root, om_train.imgs[0]))
+  dlc_live.init_inference(img)
+  print('Evaluating test images...')
+  for i in range(len(om_train.imgs)):
+    if i % 100 == 0:
+      print('  img {}...'.format(i))
+    img = cv2.imread(os.path.join(om_train.root, om_train.imgs[i]))
+    om_train.landmarks[i] = dlc_live.get_pose(img)[:, :2].flatten().tolist()
+  om_train.write_landmarks_to_file()
+
+  '''
+  deeplabcut.analyze_time_lapse_frames(config,
+    '/home/anthony/UMN_3-3-2022/CSCI_5561/final_project/data/test_dlc/test_{:07d}'.format(i),
+    frametype='.jpg', trainingsetindex=0,save_as_csv=True)
+  '''
+
+
