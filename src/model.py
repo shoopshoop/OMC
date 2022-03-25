@@ -22,10 +22,11 @@ val_img_dir = 'val/'
 class MonkeyDataset(Dataset):
     def __init__(self, img_dir, js_file, transform=None, target_transform=None):
         self.img_dir = img_dir
-        self.img_labels = pd.read_json(js_file, orient='split')
         
-        # convert landmark locations to pytorch tensors
-        self.img_labels['landmarks'] = self.img_labels['landmarks'].apply(torch.tensor)
+        self.img_labels = pd.read_json(js_file, orient='split')
+
+        # convert landmark locations to tensor 
+        self.img_labels['landmarks'] = self.img_labels['landmarks'].apply(lambda x: torch.tensor(x, dtype=torch.float))
         
         self.transform = transform
         self.target_transform = target_transform
@@ -36,23 +37,20 @@ class MonkeyDataset(Dataset):
     def __getitem__(self, idx):
         # Read image file
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        image = cv2.imread(img_path)
+        image = torchvision.io.read_image(img_path)
         # Crop Image to bounding box
         bbox =  self.img_labels.iloc[idx, 2]
-        x1 = bbox[0]
-        y1 = bbox[1]
-        x2 = x1 + bbox[2]
-        y2 = y1 + bbox[3]
-        image = image[y1:y2, x1:x2]
-        #resize image to 500x500
-        image = torch.from_numpy(cv2.resize(image, scaled_size, interpolation = cv2.INTER_LINEAR)).float()
+        
+        image = torchvision.transforms.functional.crop(image, bbox[1], bbox[0], bbox[3], bbox[2])
+        #resize image to scaled_size (256x256)
+        image = torchvision.transforms.Resize(size=scaled_size)(image).float()
         
         # get landmark locations
         label = self.img_labels.iloc[idx, 3]
         # rescale to fit bounding box
         for i in range(17):
-            label[2*i] = (label[2*i] - x1)*scaled_size[0]/(x2-x1)
-            label[2*i+1] = (label[2*i+1] - y1)*scaled_size[1]/(y2-y1)
+            label[2*i] = (label[2*i] - bbox[0])*scaled_size[0]/(bbox[2])
+            label[2*i+1] = (label[2*i+1] - bbox[1])*scaled_size[1]/(bbox[3])
         
         # Optional transforms
         if self.transform:
