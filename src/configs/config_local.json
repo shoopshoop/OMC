@@ -1,0 +1,17 @@
+{
+    "debug": false,
+
+    "model": {
+        "type": "swin_transformer"
+    },
+
+    "optimizer": {
+        "type": "AdamW",
+        "lr": 1e-3,
+        "weight_decay": 2e-5
+    },
+
+    "dataset": {
+        "name": "open_monkey"
+    }
+}
