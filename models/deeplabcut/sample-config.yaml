@@ -1,0 +1,96 @@
+    # Project definitions (do not edit)
+Task: omc_deeplabcut
+scorer: anthony
+date: Apr22
+multianimalproject: false
+identity:
+
+    # Project path (change when moving around)
+project_path: /home/anthony/UMN_3-3-2022/CSCI_5561/final_project/final/src/omc_deeplabcut-anthony-2022-04-22
+
+    # Annotation data set configuration (and individual video cropping parameters)
+video_sets:
+  /home/anthony/UMN_3-3-2022/CSCI_5561/final_project/final/src/omc_deeplabcut-anthony-2022-04-22/videos/dummy_video.avi:
+    crop: 0, 832, 0, 747
+bodyparts:
+- right_eye
+- left_eye
+- nose
+- head
+- neck
+- right_shoulder
+- right_elbow
+- right_wrist
+- left_shoulder
+- left_elbow
+- left_wrist
+- hip
+- right_knee
+- right_ankle
+- left knee
+- left_ankle
+- tail
+start: 0
+stop: 1
+numframes2pick: 20
+
+    # Plotting configuration
+skeleton:
+- - right_eye
+  - nose
+- - nose
+  - left_eye
+- - head
+  - neck
+- - neck
+  - right_shoulder
+- - right_shoulder
+  - right_elbow
+- - right_elbow
+  - right_wrist
+- - neck
+  - left_shoulder
+- - left_shoulder
+  - left_elbow
+- - left_elbow
+  - left_wrist
+- - neck
+  - hip
+- - hip
+  - right_knee
+- - hip
+  - left_knee
+- - hip
+  - tail
+- - right_knee
+  - right_ankle
+- - left_knee
+  - left_ankle
+skeleton_color: black
+pcutoff: 0.6
+dotsize: 12
+alphavalue: 0.7
+colormap: rainbow
+
+    # Training,Evaluation and Analysis configuration
+TrainingFraction:
+- 0.95
+iteration: 0
+default_net_type: resnet_50
+default_augmenter: default
+snapshotindex: -1
+batch_size: 8
+
+    # Cropping Parameters (for analysis and outlier frame detection)
+cropping: false
+    #if cropping is true for analysis, then set the values here:
+x1: 0
+x2: 640
+y1: 277
+y2: 624
+
+    # Refinement configuration (parameters from annotation dataset configuration also relevant in this stage)
+corner2move2:
+- 50
+- 50
+move2corner: true
