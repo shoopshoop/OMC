@@ -529,7 +529,8 @@ class SwinTransformer(nn.Module):
         self.conv3 = nn.Conv2d(in_channels=C_all[3], out_channels=C_base, kernel_size=[1, 1])
         self.conv2 = nn.Conv2d(in_channels=C_all[2], out_channels=C_base, kernel_size=[1, 1])
         self.conv1 = nn.Conv2d(in_channels=C_all[1], out_channels=C_base, kernel_size=[1, 1])
-        self.conv0 = nn.Conv2d(in_channels=C_base*4, out_channels=17, kernel_size=[1, 1])
+        self.conv0 = nn.Conv2d(in_channels=C_all[0], out_channels=C_base, kernel_size=[1, 1])
+        self.conv_final = nn.Conv2d(in_channels=C_base*4, out_channels=17, kernel_size=[1, 1])
 
         self.H_all = (embed_dim/torch.tensor([2, 4, 8, 8])).to(int)
         self.upsamp2 = nn.Upsample(scale_factor=2, mode="bilinear")
@@ -581,10 +582,10 @@ class SwinTransformer(nn.Module):
     def features_pyramid(self, features):
         feat3 = torch.cat([self.conv3(features[3]), self.conv2(features[2])], dim=1)
         feat2 = torch.cat([self.upsamp2(feat3), self.conv1(features[1])], dim=1)
-        feat1 = torch.cat([self.upsamp2(feat2), features[0]], dim=1)
+        feat1 = torch.cat([self.upsamp2(feat2), self.conv0(features[0])], dim=1)
 
         feat0 = self.upsamp8(feat1)
-        pred_heatmap = self.conv0(feat0)
+        pred_heatmap = self.conv_final(feat0)
 
         return pred_heatmap
 
