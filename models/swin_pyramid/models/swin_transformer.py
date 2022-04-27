@@ -1,6 +1,8 @@
 '''
 This file is derived from the following source:
 - https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_transformer.py
+
+Modification has been made for generating predicted heatmaps with features pyramid.
 '''
 
 import torch

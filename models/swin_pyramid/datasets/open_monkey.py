@@ -46,7 +46,7 @@ I   = np.array([1,2,3,4,5,6,4,8,9,4,11,12,11,14,11])
 J   = np.array([2,0,4,5,6,7,8,9,10,11,12,13,14,15,16])
 
 class OpenMonkeyDataset(Dataset):
-  def __init__(self, root=None, mode="train",transform=None, target_transform=torch.tensor, scaled_size = (224,224)):
+  def __init__(self, root=None, mode="train", transform=None, scaled_size = (224,224)):
     # load dataset
     # self.dataset,self.landmarks,self.specs,self.imgs = dict(),dict(),dict(),dict()
 
@@ -67,7 +67,7 @@ class OpenMonkeyDataset(Dataset):
     self.scaled_size = scaled_size
 
     self.transform = transform
-    self.target_transform = target_transform
+    self.target_transform = get_target_transform(mode)
           
   def createIndex(self):
     # create index
@@ -93,27 +93,41 @@ class OpenMonkeyDataset(Dataset):
     image = torchvision.io.read_image(img_path)
     # Crop Image to bounding box
     bbox =  self.bbox[idx]
-    
     image = torchvision.transforms.functional.crop(image, bbox[1], bbox[0], bbox[3], bbox[2])
     #resize image to scaled_size (256x256)
     image = torchvision.transforms.Resize(size=self.scaled_size)(image).float()
     
-    # get landmark locations
-    label = self.landmarks[idx]
-    # rescale to fit bounding box
-    for i in range(17):
-        label[2*i] = (label[2*i] - bbox[0])*self.scaled_size[0]/(bbox[2])
-        label[2*i+1] = (label[2*i+1] - bbox[1])*self.scaled_size[1]/(bbox[3])
-    
     # Optional transforms
     if self.transform:
         image = self.transform(image)
-    if self.target_transform:
-        label = self.target_transform(label)
-    
-    return image, label
 
+    if self.mode != "test":
+      # get landmark locations
+      label = self.landmarks[idx]
+      # rescale to fit bounding box
+      for i in range(17):
+          label[2*i] = (label[2*i] - bbox[0])*self.scaled_size[0]/(bbox[2])
+          label[2*i+1] = (label[2*i+1] - bbox[1])*self.scaled_size[1]/(bbox[3])
+      # Optional transforms
+      if self.target_transform:
+          label = self.target_transform(label)
+      
+      return image, label
+    else:
+      return image
 
+def get_target_transform(mode):
+  if mode == "train":
+    transform = label_to_heatmap
+  elif mode == "val":
+    transform = torch.tensor
+  else:
+    transform = None
+
+  return transform
+
+def label_to_heatmap(label):
+  # == to do == 
 
 if __name__ == "main":
   datapath = "C:/Users/jiang/Documents/Data/open-monkey"

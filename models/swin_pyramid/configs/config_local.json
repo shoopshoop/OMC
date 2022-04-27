@@ -1,17 +1,43 @@
 {
     "debug": false,
+    "resume_training": false,
+
+    "ckp_dir": "",
+    "save_root": "C:/Users/jiang/Documents/AllLog/OMC",
 
     "model": {
-        "type": "swin_transformer"
+        "type": "swin_transformer",
+        "pretrained": false,
+        "dir": ""
     },
 
     "optimizer": {
         "type": "AdamW",
         "lr": 1e-3,
-        "weight_decay": 2e-5
+        "weight_decay": 2e-5,
+
+        "lr_scheduler": "StepLR"
     },
 
     "dataset": {
-        "name": "open_monkey"
+        "name": "open_monkey",
+        "dir": "C:/Users/jiang/Documents/Data/open-monkey",
+
+        "subset": true,
+        "ds_skip": 10
+    },
+
+    "trainer": {
+        "num_epoch": 100,
+        "print_every": 100,
+        
+        "clip_grad": false,
+        
+        "train_batch_size": 32,
+        "test_batch_size": 32
+    }, 
+
+    "loss": {
+        "func": "MSE"
     }
 }
