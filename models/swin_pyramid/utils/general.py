@@ -3,7 +3,7 @@ from torch import nn
 import random
 import numpy as np
 
-from models.swin_transformer import SwinTransformer
+from models.swin_transformer import SwinTransformerPyramid, SwinTransformerHeatmap
 
 def seed_everything(config):
     seed = config["seed"]
@@ -26,18 +26,21 @@ def build_model(config,
     assert device is not None, "Specify your device please."
     model_cfg = config["model"]
 
-    if model_cfg["type"] == "swin_transformer":
-        model = SwinTransformer()
-
-        if model_cfg["pretrained"]:
-            ckp_content = torch.load(model_cfg["dir"])
-            model_state_dict = ckp_content['model']
-            model.load_my_state_dict(model_state_dict)
-            print("Pretrained model loaded!")
-            
-        model = model.to(device)
+    if model_cfg["type"] == "swin_pyramid":
+        model = SwinTransformerPyramid()
+    elif model_cfg["type"] == "swin_heatmap":
+        model = SwinTransformerHeatmap()
     else:
         raise RuntimeError("The author is lazy and did not implement another model yet.")
+
+    if model_cfg["pretrained"]:
+        ckp_content = torch.load(model_cfg["dir"])
+        model_state_dict = ckp_content['model']
+        model.load_my_state_dict(model_state_dict)
+        print("Pretrained model loaded!")
+
+    model = model.to(device)
+
     return model
 
 

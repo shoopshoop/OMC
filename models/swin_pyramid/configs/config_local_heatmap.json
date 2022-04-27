@@ -8,7 +8,7 @@
     "save_root": "C:/Users/jiang/Documents/AllLog/OMC",
 
     "model": {
-        "type": "swin_pyramid",
+        "type": "swin_heatmap",
         "pretrained": true,
         "dir": "C:/Users/jiang/Documents/Data/swin-transformer-checkpoints/swin_tiny_patch4_window7_224.pth"
     },

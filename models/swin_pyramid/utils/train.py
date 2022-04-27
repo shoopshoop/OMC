@@ -32,7 +32,7 @@ def save_model_ckp(config, model, epoch, iter_num,
     checkpoint = {"epoch": epoch,
                   "iter": iter_num,
                   "model_state_dict": model_state_dict,
-                  "optimizer": config["opts"]["optimizer"],
+                  "optimizer": config["optimizer"]["type"],
                   "scheduler": scheduler,
                   "optimizer_state_dict": optimizer.state_dict()}
     torch.save(checkpoint, os.path.join(save_dir, "checkpoint.pth"))
