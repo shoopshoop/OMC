@@ -4,7 +4,7 @@ from numpy import append
 import torch
 
 from utils.train import train_iter, save_model_ckp, validate
-from utils.general import get_optimizer, get_scheduler, build_model, set_device, seed_everything, get_loss_func, initialize_epoch_info
+from utils.general import get_optimizer, get_scheduler, build_model, set_device, seed_everything, get_loss_func, initialize_epoch_info, load_dict
 from configs.config import update_config, save_exp_info
 from datasets.build import get_dataloader
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # parser.add_argument("--config", required=True, type=str,
     #                     help="Path to the json config file.")
     parser.add_argument("--config", type=str,
-                        default="./configs/config_local.json",
+                        default="models/swin_pyramid/configs/config_local.json",
                         help="Path to the json config file.")
     parser.add_argument("--machine", type=str,
                         default="pc")
@@ -101,11 +101,15 @@ if __name__ == "__main__":
                                     config=config,
                                     device=device)
             
+            total_iter += 1
+            
             for each_key in iter_info.keys():
                 epoch_info[each_key] += iter_info[each_key]
 
+
         # ==== Print Training Stats
-        print("  >> >> Training Loss [%.03f]" % (epoch_info["train_loss"])
+        epoch_info["train_loss"] = epoch_info["train_loss"] / num_train_iter_per_epoch
+        print("  >> >> Training Loss [%.03f]" % (epoch_info["train_loss"]))
 
         summary["train_loss"].append(epoch_info["train_loss"])
 
@@ -126,14 +130,16 @@ if __name__ == "__main__":
 
         model.eval()
         # ==== Evaluate on validation set
-        val_result = validate(val_loader, model)
+        val_result = validate(val_loader, model, loss_func, device)
 
         # ==== Print Validation Stats
-        print("  >> >> Validation Metric [%.03f]" % (val_result["val_metric"])
+        print("  >> >> Validation Metric [%.03f]" % (val_result["val_metric"]))
 
         summary["val_metric"].append(val_result["val_metric"])
 
         # ==== Learning rate scheduler ==== 
         if config["optimizer"]["lr_scheduler"] != "RedusceLROnPlateau":
             scheduler.step()
+
+        epoch += 1
 

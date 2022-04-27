@@ -1,4 +1,4 @@
-import torch
+import torch, os
 from torch import nn
 import random
 import numpy as np
@@ -24,11 +24,17 @@ def set_device(config):
 def build_model(config, 
                 device=None):
     assert device is not None, "Specify your device please."
-    model_type = config["model"]["type"]
-    # pretrained = config["model"]["pretrained"]
+    model_cfg = config["model"]
 
-    if model_type == "swin_transformer":
+    if model_cfg["type"] == "swin_transformer":
         model = SwinTransformer()
+
+        if model_cfg["pretrained"]:
+            ckp_content = torch.load(model_cfg["dir"])
+            model_state_dict = ckp_content['model']
+            model.load_my_state_dict(model_state_dict)
+            print("Pretrained model loaded!")
+            
         model = model.to(device)
     else:
         raise RuntimeError("The author is lazy and did not implement another model yet.")
@@ -99,3 +105,9 @@ def initialize_epoch_info(config):
         "train_loss": 0
     }
     return epoch_info
+
+def load_dict(root_dir, name):
+    summary_file = os.path.join(root_dir, name)
+    summary_data = np.load(summary_file, allow_pickle=True)
+    saved_dict = summary_data.item()
+    return saved_dict

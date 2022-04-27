@@ -9,6 +9,8 @@ def update_config(config, args):
     config["data_parallel"] = True if torch.cuda.device_count() > 1 else False
     config["machine"] = args.machine
 
+    return config
+
 def save_exp_info(config):
     if config["resume_training"]:
         save_root = config["ckp_dir"]

@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from math import sqrt
+from torch.nn.parameter import Parameter
 
 
 class Mlp(nn.Module):
@@ -528,15 +529,16 @@ class SwinTransformer(nn.Module):
         
         C_all = embed_dim*torch.tensor([2, 4, 8, 8])
         C_base = C_all[0]
-        self.conv3 = nn.Conv2d(in_channels=C_all[3], out_channels=C_base, kernel_size=[1, 1])
-        self.conv2 = nn.Conv2d(in_channels=C_all[2], out_channels=C_base, kernel_size=[1, 1])
-        self.conv1 = nn.Conv2d(in_channels=C_all[1], out_channels=C_base, kernel_size=[1, 1])
-        self.conv0 = nn.Conv2d(in_channels=C_all[0], out_channels=C_base, kernel_size=[1, 1])
-        self.conv_final = nn.Conv2d(in_channels=C_base*4, out_channels=17, kernel_size=[1, 1])
+        self.conv3 = nn.Conv2d(in_channels=C_all[3], out_channels=C_base, kernel_size=1)
+        self.conv2 = nn.Conv2d(in_channels=C_all[2], out_channels=C_base, kernel_size=1)
+        self.conv1 = nn.Conv2d(in_channels=C_all[1], out_channels=C_base, kernel_size=1)
+        self.conv0 = nn.Conv2d(in_channels=C_all[0], out_channels=C_base, kernel_size=1)
+        self.conv_final = nn.Conv2d(in_channels=C_base, out_channels=18, kernel_size=1)
 
         self.H_all = (embed_dim/torch.tensor([2, 4, 8, 8])).to(int)
         self.upsamp2 = nn.Upsample(scale_factor=2, mode="bilinear")
         self.upsamp8 = nn.Upsample(scale_factor=8, mode="bilinear")
+        self.norm_final = norm_layer([img_size, img_size])
 
         # self.norm = norm_layer(self.num_features)
         # self.avgpool = nn.AdaptiveAvgPool1d(1)
@@ -582,12 +584,13 @@ class SwinTransformer(nn.Module):
         return x, features
 
     def features_pyramid(self, features):
-        feat3 = torch.cat([self.conv3(features[3]), self.conv2(features[2])], dim=1)
-        feat2 = torch.cat([self.upsamp2(feat3), self.conv1(features[1])], dim=1)
-        feat1 = torch.cat([self.upsamp2(feat2), self.conv0(features[0])], dim=1)
+        feat3 = self.conv3(features[3]) + self.conv2(features[2])
+        feat2 = self.upsamp2(feat3) + self.conv1(features[1])
+        feat1 = self.upsamp2(feat2) + self.conv0(features[0])
 
         feat0 = self.upsamp8(feat1)
         pred_heatmap = self.conv_final(feat0)
+        pred_heatmap = self.norm_final(pred_heatmap)
 
         return pred_heatmap
 
@@ -605,3 +608,13 @@ class SwinTransformer(nn.Module):
         flops += self.num_features * self.patches_resolution[0] * self.patches_resolution[1] // (2 ** self.num_layers)
         flops += self.num_features * self.num_classes
         return flops
+
+    def load_my_state_dict(self, state_dict):
+        own_state = self.state_dict()
+        for name, param in state_dict.items():
+            if name not in own_state:
+                    continue
+            if isinstance(param, Parameter):
+                # backwards compatibility for serialized parameters
+                param = param.data
+            own_state[name].copy_(param)

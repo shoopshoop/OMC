@@ -38,7 +38,19 @@ def save_model_ckp(config, model, epoch, iter_num,
     torch.save(checkpoint, os.path.join(save_dir, "checkpoint.pth"))
 
 @torch.no_grad()
-def validate(dataloader, model):
-    #  == to do ==
-    result = {}
+def validate(dataloader, model, loss_func, device):
+    losses = 0
+    total_iter = len(dataloader)
+
+    for inputs, labels in dataloader:
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+
+        pred_heatmaps = model(inputs)
+        loss = loss_func(labels, pred_heatmaps)
+        losses += loss.item()
+
+    result = {
+        "val_metric": losses/total_iter
+    }
     return result

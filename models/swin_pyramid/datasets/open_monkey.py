@@ -46,7 +46,7 @@ I   = np.array([1,2,3,4,5,6,4,8,9,4,11,12,11,14,11])
 J   = np.array([2,0,4,5,6,7,8,9,10,11,12,13,14,15,16])
 
 class OpenMonkeyDataset(Dataset):
-  def __init__(self, root=None, mode="train", transform=None, scaled_size = (224,224)):
+  def __init__(self, root=None, mode="train", transform=None, scaled_size = (224,224), stride=1, sigma=3.0):
     # load dataset
     # self.dataset,self.landmarks,self.specs,self.imgs = dict(),dict(),dict(),dict()
 
@@ -67,7 +67,10 @@ class OpenMonkeyDataset(Dataset):
     self.scaled_size = scaled_size
 
     self.transform = transform
-    self.target_transform = get_target_transform(mode)
+
+    # Heatmap parameter
+    self.stride = stride
+    self.sigma = sigma
           
   def createIndex(self):
     # create index
@@ -108,31 +111,39 @@ class OpenMonkeyDataset(Dataset):
       for i in range(17):
           label[2*i] = (label[2*i] - bbox[0])*self.scaled_size[0]/(bbox[2])
           label[2*i+1] = (label[2*i+1] - bbox[1])*self.scaled_size[1]/(bbox[3])
-      # Optional transforms
-      if self.target_transform:
-          label = self.target_transform(label)
+      
+      label = self.label_to_heatmap(label)
       
       return image, label
     else:
       return image
 
-def get_target_transform(mode):
-  if mode == "train":
-    transform = label_to_heatmap
-  elif mode == "val":
-    transform = torch.tensor
-  else:
-    transform = None
 
-  return transform
+  def label_to_heatmap(self, kpt):
+    H, W = self.scaled_size
+    heatmap = np.zeros((17 + 1, H // self.stride, W // self.stride), dtype=np.float32)
+    for i in range(17):
+        x = int(kpt[2*i]) * 1.0  / self.stride
+        y = int(kpt[2*i+1]) * 1.0  / self.stride
+        heat_map = guassian_kernel(size_h=H // self.stride , size_w=W // self.stride, center_x=x, center_y=y, sigma=self.sigma)
+        heat_map[heat_map > 1] = 1
+        heat_map[heat_map < 0.0099] = 0
+        heatmap[i + 1, :, :] = heat_map
 
-def label_to_heatmap(label):
-  # == to do == 
+    heatmap[0, :, :] = 1.0 - np.max(heatmap[1:, :, :], axis=0)  # for background
+    heatmap = torch.tensor(heatmap)
+    
+    return heatmap
+
+def guassian_kernel(size_w, size_h, center_x, center_y, sigma):
+    gridy, gridx = np.mgrid[0:size_h, 0:size_w]
+    D2 = (gridx - center_x) ** 2 + (gridy - center_y) ** 2
+    return np.exp(-D2 / 2.0 / sigma / sigma)
 
 if __name__ == "main":
   datapath = "C:/Users/jiang/Documents/Data/open-monkey"
 
   training_data = OpenMonkeyDataset(datapath, mode="train")
-  val_data = OpenMonkeyDataset(datapath, mode="val")
+  # val_data = OpenMonkeyDataset(datapath, mode="val")
 
   image, label = training_data.__getitem__(1)

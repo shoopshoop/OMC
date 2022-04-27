@@ -1,9 +1,14 @@
 from datasets.open_monkey import OpenMonkeyDataset
 import torch
 
+from torchvision.transforms import Compose, Normalize
+
 def get_transform(config, mode):
     # == TO DO == 
-    transform = None
+    transform = Compose([
+        Normalize((128, 128, 128),
+                  (255, 255, 255))
+    ])
     return transform
 
 def get_dataset(config, mode):

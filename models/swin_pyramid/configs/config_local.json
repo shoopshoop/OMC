@@ -1,14 +1,16 @@
 {
-    "debug": false,
+    "debug": true,
     "resume_training": false,
+
+    "seed": 42,
 
     "ckp_dir": "",
     "save_root": "C:/Users/jiang/Documents/AllLog/OMC",
 
     "model": {
         "type": "swin_transformer",
-        "pretrained": false,
-        "dir": ""
+        "pretrained": true,
+        "dir": "C:/Users/jiang/Documents/Data/swin-transformer-checkpoints/swin_tiny_patch4_window7_224.pth"
     },
 
     "optimizer": {
@@ -24,7 +26,7 @@
         "dir": "C:/Users/jiang/Documents/Data/open-monkey",
 
         "subset": true,
-        "ds_skip": 10
+        "ds_skip": 20
     },
 
     "trainer": {
@@ -33,7 +35,7 @@
         
         "clip_grad": false,
         
-        "train_batch_size": 32,
+        "train_batch_size": 16,
         "test_batch_size": 32
     }, 
 
