@@ -130,3 +130,6 @@ dmypy.json
 
 # mac files
 .DS_Store
+
+# Test files
+test.ipynb

@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from math import sqrt
 
 
 class Mlp(nn.Module):
@@ -522,10 +523,21 @@ class SwinTransformer(nn.Module):
                                downsample=PatchMerging if (i_layer < self.num_layers - 1) else None,
                                use_checkpoint=use_checkpoint)
             self.layers.append(layer)
+        
+        C_all = embed_dim*torch.tensor([2, 4, 8, 8])
+        C_base = C_all[0]
+        self.conv3 = nn.Conv2d(in_channels=C_all[3], out_channels=C_base, kernel_size=[1, 1])
+        self.conv2 = nn.Conv2d(in_channels=C_all[2], out_channels=C_base, kernel_size=[1, 1])
+        self.conv1 = nn.Conv2d(in_channels=C_all[1], out_channels=C_base, kernel_size=[1, 1])
+        self.conv0 = nn.Conv2d(in_channels=C_base*4, out_channels=17, kernel_size=[1, 1])
 
-        self.norm = norm_layer(self.num_features)
-        self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        self.H_all = (embed_dim/torch.tensor([2, 4, 8, 8])).to(int)
+        self.upsamp2 = nn.Upsample(scale_factor=2, mode="bilinear")
+        self.upsamp8 = nn.Upsample(scale_factor=8, mode="bilinear")
+
+        # self.norm = norm_layer(self.num_features)
+        # self.avgpool = nn.AdaptiveAvgPool1d(1)
+        # self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
 
         self.apply(self._init_weights)
 
@@ -552,18 +564,35 @@ class SwinTransformer(nn.Module):
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
 
+        features = []
         for layer in self.layers:
             x = layer(x)
 
-        x = self.norm(x)  # B L C
-        x = self.avgpool(x.transpose(1, 2))  # B C 1
-        x = torch.flatten(x, 1)
-        return x
+            B, HW, C = x.shape
+            H = int(sqrt(HW))
+            feature = x.view(B, H, H, C).permute(0, 3, 1, 2)
+            features.append(feature)
+
+        # x = self.norm(x)  # B L C
+        # x = self.avgpool(x.transpose(1, 2))  # B C 1
+        # x = torch.flatten(x, 1)
+        return x, features
+
+    def features_pyramid(self, features):
+        feat3 = torch.cat([self.conv3(features[3]), self.conv2(features[2])], dim=1)
+        feat2 = torch.cat([self.upsamp2(feat3), self.conv1(features[1])], dim=1)
+        feat1 = torch.cat([self.upsamp2(feat2), features[0]], dim=1)
+
+        feat0 = self.upsamp8(feat1)
+        pred_heatmap = self.conv0(feat0)
+
+        return pred_heatmap
 
     def forward(self, x):
-        x = self.forward_features(x)
-        x = self.head(x)
-        return x
+        x, features = self.forward_features(x)
+        pred_heatmap = self.features_pyramid(features)
+        # x = self.head(x)
+        return pred_heatmap
 
     def flops(self):
         flops = 0
