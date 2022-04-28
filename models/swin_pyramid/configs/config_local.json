@@ -26,12 +26,12 @@
         "dir": "C:/Users/jiang/Documents/Data/open-monkey",
 
         "subset": false,
-        "ds_skip": 20
+        "ds_skip": 10
     },
 
     "trainer": {
         "num_epoch": 100,
-        "print_every": 100,
+        "print_every": 500,
         
         "clip_grad": false,
         

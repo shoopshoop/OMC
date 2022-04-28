@@ -45,6 +45,11 @@ colors = [
 I   = np.array([1,2,3,4,5,6,4,8,9,4,11,12,11,14,11]) 
 J   = np.array([2,0,4,5,6,7,8,9,10,11,12,13,14,15,16])
 
+def guassian_kernel(size_w, size_h, center_x, center_y, sigma):
+    gridy, gridx = np.mgrid[0:size_h, 0:size_w]
+    D2 = (gridx - center_x) ** 2 + (gridy - center_y) ** 2
+    return np.exp(-D2 / 2.0 / sigma / sigma)
+
 class OpenMonkeyDataset(Dataset):
   def __init__(self, root=None, mode="train", transform=None, scaled_size = (224,224), stride=1, sigma=3.0):
     # load dataset
@@ -54,7 +59,7 @@ class OpenMonkeyDataset(Dataset):
     self.mode = mode
 
     self.root = root
-    self.annfilepath = os.path.join(root, mode+"_annotation.json") if mode != "test" else None
+    self.annfilepath = os.path.join(root, mode+"_annotation.json") if mode != "test" else os.path.join(root, "test_prediction.json")
     self.imgpath = os.path.join(root, mode)
 
     if not self.annfilepath == None:
@@ -97,7 +102,7 @@ class OpenMonkeyDataset(Dataset):
     # Crop Image to bounding box
     bbox =  self.bbox[idx]
     image = torchvision.transforms.functional.crop(image, bbox[1], bbox[0], bbox[3], bbox[2])
-    #resize image to scaled_size (256x256)
+    #resize image to scaled_size (224x224)
     image = torchvision.transforms.Resize(size=self.scaled_size)(image).float()
     
     # Optional transforms
@@ -116,7 +121,7 @@ class OpenMonkeyDataset(Dataset):
       
       return image, label
     else:
-      return image
+      return image, idx
 
 
   def label_to_heatmap(self, kpt):
@@ -135,10 +140,66 @@ class OpenMonkeyDataset(Dataset):
     
     return heatmap
 
-def guassian_kernel(size_w, size_h, center_x, center_y, sigma):
-    gridy, gridx = np.mgrid[0:size_h, 0:size_w]
-    D2 = (gridx - center_x) ** 2 + (gridy - center_y) ** 2
-    return np.exp(-D2 / 2.0 / sigma / sigma)
+  def save_landmarks(self, idx_list, landmarks):
+    for idx, landmark in zip(idx_list, landmarks):
+      # mapping landmarks to original images
+      bbox = self.bbox[idx]
+      for i in range(17):
+          landmark[2*i] = landmark[2*i]/self.scaled_size[0]*bbox[2]+bbox[0]
+          landmark[2*i+1] = landmark[2*i+1]/self.scaled_size[1]*bbox[3]+bbox[1]
+      # save landmarks
+      self.landmarks[idx]  = landmark
+
+  def write_landmarks_to_file(self, path):
+    # update json dataset
+    if 'data' in self.dataset:
+      for i in range(len(self.dataset['data'])):
+        self.dataset['data'][i]['landmarks'] = self.landmarks[i] 
+    # writing to sample.json
+    pred_path = os.path.join(path, "test_prediction.json")
+    with open(pred_path, "w") as fd:
+      fd.write(json.dumps(self.dataset, indent=4))
+
+  def showImgs(self, imgs):
+    for i in range(len(imgs)):
+      img = cv2.imread(os.path.join(self.imgpath, imgs[i]))
+      plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+      plt.axis('off')
+      plt.show()
+      
+  def showBbox(self, imgs, bboxs):
+    for i in range(len(imgs)):
+      img = cv2.imread(os.path.join(self.imgpath, imgs[i]))
+      x1 = bboxs[i][0]
+      y1 = bboxs[i][1]
+      x2 = x1 + bboxs[i][2]
+      y2 = y1 + bboxs[i][3]
+      img = cv2.rectangle(img, (x1,y1), (x2,y2),(0,255,0), 2)
+      plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+      plt.axis('off')
+      plt.show()
+
+  def showAnns(self, imgs, landmarks, bboxs=None, keypoints=False):
+    for i in range(len(imgs)):
+      img = cv2.imread(os.path.join(self.imgpath, imgs[i]))
+      if bboxs != None:
+        x1 = bboxs[i][0]
+        y1 = bboxs[i][1]
+        x2 = x1 + bboxs[i][2]
+        y2 = y1 + bboxs[i][3]
+        img = cv2.rectangle(img, (x1,y1), (x2,y2),(0,255,0), 2)
+      x = landmarks[i][::2]
+      y = landmarks[i][1::2]
+      for j in range(len(I)):
+        cv2.line(img,(int(round(x[I[j]])),int(round(y[I[j]]))),(int(round(x[J[j]])),int(round(y[J[j]]))),colors[j], 2)
+      if keypoints == True:
+        for j in range(len(x)):
+          cv2.circle(img, (int(round(x[j])),int(round(y[j]))), 5, (255,255,255), -1)
+          cv2.circle(img, (int(round(x[j])),int(round(y[j]))), 3, (0,0,0), -1)
+      plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+      plt.axis('off')
+      plt.show()
+
 
 if __name__ == "main":
   datapath = "C:/Users/jiang/Documents/Data/open-monkey"

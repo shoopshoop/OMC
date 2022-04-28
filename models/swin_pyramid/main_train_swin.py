@@ -1,10 +1,12 @@
 import json, os, argparse, time
+import numpy as np
 from numpy import append
 
 import torch
 
 from utils.train import train_iter, save_model_ckp, validate
 from utils.general import get_optimizer, get_scheduler, build_model, set_device, seed_everything, get_loss_func, initialize_epoch_info, load_dict
+from utils.plots import plot_train_val_eval
 from configs.config import update_config, save_exp_info
 from datasets.build import get_dataloader
 
@@ -17,7 +19,7 @@ if __name__ == "__main__":
     # parser.add_argument("--config", required=True, type=str,
     #                     help="Path to the json config file.")
     parser.add_argument("--config", type=str,
-                        default="models/swin_pyramid/configs/config_local.json",
+                        default="C:/Users/jiang/Documents/AllLog/OMC/2022-Apr-27/16-06-28/Exp_Config.json",
                         help="Path to the json config file.")
     parser.add_argument("--machine", type=str,
                         default="pc")
@@ -40,7 +42,7 @@ if __name__ == "__main__":
 
     loss_func = get_loss_func(config)
 
-    # Get DataLoader  (by labels)
+    # Get DataLoader 
     train_loader = get_dataloader(config, mode="train")
     val_loader = get_dataloader(config, mode="val")
 
@@ -136,6 +138,13 @@ if __name__ == "__main__":
         print("  >> >> Validation Metric [%.03f]" % (val_result["val_metric"]))
 
         summary["val_metric"].append(val_result["val_metric"])
+
+        # ==== Plot Figures
+        plot_train_val_eval(summary_dict=summary, save_dir=fig_dir, save_name="Train_Val_Loss_Plot", config=config)
+
+        # ==== Save summary ==== 
+        file_name = os.path.join(save_root, "summary.npy")
+        np.save(file_name, summary)
 
         # ==== Learning rate scheduler ==== 
         if config["optimizer"]["lr_scheduler"] != "RedusceLROnPlateau":
