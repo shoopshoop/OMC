@@ -32,6 +32,8 @@ if __name__ == "__main__":
 
     fig_dir = os.path.join(save_root, "figures")
     os.makedirs(fig_dir, exist_ok=True)
+    mv_ckp_dir = os.path.join(save_root, "min_val_ckp")
+    os.makedirs(mv_ckp_dir, exist_ok=True)
 
     seed_everything(config)
     device = set_device(config)
@@ -72,7 +74,8 @@ if __name__ == "__main__":
         summary = {  # To save training history
             "train_loss": [],
             "val_metric": [],
-            "epoch_info": []
+            "epoch_info": [],
+            "min_val_metric": 0,
             }
 
     # Auto Data Parallel depending on gpu count
@@ -142,9 +145,19 @@ if __name__ == "__main__":
         # ==== Plot Figures
         plot_train_val_eval(summary_dict=summary, save_dir=fig_dir, save_name="Train_Val_Loss_Plot", config=config)
 
-        # ==== Save summary ==== 
+        # ==== Save summary 
         file_name = os.path.join(save_root, "summary.npy")
         np.save(file_name, summary)
+
+        # ==== Save checkpoint with least validation loss
+        if summary["min_val_metric"] > val_result["val_metric"]:
+            summary["min_val_metric"] = val_result["val_metric"]
+            if not config["debug"]:
+                save_model_ckp(config, model=model, 
+                            epoch=epoch, iter_num=total_iter,
+                            optimizer=optimizer, 
+                            scheduler=scheduler, 
+                            save_dir=mv_ckp_dir)
 
         # ==== Learning rate scheduler ==== 
         if config["optimizer"]["lr_scheduler"] != "RedusceLROnPlateau":
