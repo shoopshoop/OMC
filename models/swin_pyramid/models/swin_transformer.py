@@ -734,7 +734,7 @@ class SwinTransformerHeatmap(nn.Module):
         feature = self.conv3(feature)
         feature = self.upsamp32(feature)
         pred_heatmap = self.conv_final(feature)
-        pred_heatmap = self.relu(pred_heatmap)
+        # pred_heatmap = self.relu(pred_heatmap)
         pred_heatmap = self.norm_final(pred_heatmap)
         return pred_heatmap
 

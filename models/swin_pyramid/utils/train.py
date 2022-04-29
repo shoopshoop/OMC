@@ -35,7 +35,7 @@ def save_model_ckp(config, model, epoch, iter_num,
                   "optimizer": config["optimizer"]["type"],
                   "scheduler": scheduler,
                   "optimizer_state_dict": optimizer.state_dict()}
-    torch.save(checkpoint, os.path.join(save_dir, "checkpoint.pth"))
+    torch.save(checkpoint, os.path.join(save_dir, "checkpoint_epoch"+str(epoch)+".pth"))
 
 @torch.no_grad()
 def validate(dataloader, model, loss_func, device):

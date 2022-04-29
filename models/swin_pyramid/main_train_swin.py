@@ -152,6 +152,7 @@ if __name__ == "__main__":
         # ==== Save checkpoint with least validation loss
         if summary["min_val_metric"] > val_result["val_metric"]:
             summary["min_val_metric"] = val_result["val_metric"]
+            print("Minimal validation loss updated!")
             if not config["debug"]:
                 save_model_ckp(config, model=model, 
                             epoch=epoch, iter_num=total_iter,
