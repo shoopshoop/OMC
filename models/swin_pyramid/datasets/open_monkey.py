@@ -51,7 +51,7 @@ def guassian_kernel(size_w, size_h, center_x, center_y, sigma):
     return np.exp(-D2 / 2.0 / sigma / sigma)
 
 class OpenMonkeyDataset(Dataset):
-  def __init__(self, root=None, mode="train", transform=None, scaled_size = (224,224), stride=1, sigma=3.0):
+  def __init__(self, root=None, mode="train", transform=None, scaled_size = (224,224), stride=1, sigma=10.0):
     # load dataset
     # self.dataset,self.landmarks,self.specs,self.imgs = dict(),dict(),dict(),dict()
 

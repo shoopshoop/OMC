@@ -538,6 +538,7 @@ class SwinTransformerPyramid(nn.Module):
         self.H_all = (embed_dim/torch.tensor([2, 4, 8, 8])).to(int)
         self.upsamp2 = nn.Upsample(scale_factor=2, mode="bilinear")
         self.upsamp8 = nn.Upsample(scale_factor=8, mode="bilinear")
+        self.relu = nn.LeakyReLU()
         self.norm_final = norm_layer([img_size, img_size])
 
         # self.norm = norm_layer(self.num_features)
@@ -590,6 +591,7 @@ class SwinTransformerPyramid(nn.Module):
 
         feat0 = self.upsamp8(feat1)
         pred_heatmap = self.conv_final(feat0)
+        pred_heatmap = self.relu(pred_heatmap)
         pred_heatmap = self.norm_final(pred_heatmap)
 
         return pred_heatmap
@@ -684,6 +686,7 @@ class SwinTransformerHeatmap(nn.Module):
 
         self.H_all = (embed_dim/torch.tensor([2, 4, 8, 8])).to(int)
         self.upsamp32 = nn.Upsample(scale_factor=32, mode="bilinear")
+        self.relu = nn.LeakyReLU()
         self.norm_final = norm_layer([img_size, img_size])
 
         # self.norm = norm_layer(self.num_features)
@@ -731,6 +734,7 @@ class SwinTransformerHeatmap(nn.Module):
         feature = self.conv3(feature)
         feature = self.upsamp32(feature)
         pred_heatmap = self.conv_final(feature)
+        pred_heatmap = self.relu(pred_heatmap)
         pred_heatmap = self.norm_final(pred_heatmap)
         return pred_heatmap
 
