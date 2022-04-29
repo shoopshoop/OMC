@@ -44,14 +44,14 @@ if __name__ == "__main__":
                     index = (layer==torch.max(layer)).nonzero().cpu().tolist()[0]
                     landmark += index 
                 testv_data.save_landmarks(idx_list=[each_idx.cpu().tolist()], landmarks=[landmark])
-            break
+            # break
     
-    # Visulization
-    for each_idx in idx:
-        i = each_idx.cpu().tolist()
-        testv_data.showAnns([testv_data.imgs[i]], [testv_data.landmarks[i]], keypoints=True)
+    # # Visulization
+    # for each_idx in idx:
+    #     i = each_idx.cpu().tolist()
+    #     testv_data.showAnns([testv_data.imgs[i]], [testv_data.landmarks[i]], keypoints=True)
 
-    # path = ""
-    # testv_data.write_landmarks_to_file(path)
+    path = ""
+    testv_data.write_landmarks_to_file(path)
 
 
